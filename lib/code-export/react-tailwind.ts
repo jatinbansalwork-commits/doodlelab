@@ -30,7 +30,7 @@ const containerVariants = {
   },
 };
 
-/** ${label} — DoodleLab AI */
+/** ${label} — DoodleLab */
 export function MotionCard({
   children,
   className,

@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { CanvasDoodle } from "@/components/doodles/CanvasDoodle";
 import { burstForItem, liveObjectMotion, motionKeyForObject } from "@/lib/item-motion";
 import { objectConfig } from "@/lib/canvas-math";
-import { playDoodleSound } from "@/lib/sounds/doodle-sounds";
+import { playDragStart, playDrop } from "@/lib/sounds/doodle-sounds";
 import { cn } from "@/lib/cn";
 import { useDoodleStore } from "@/store/doodle-store";
 import type { CanvasItem, StickerLabel } from "@/types/canvas";
@@ -20,6 +20,8 @@ const STICKER_COLORS: Record<StickerLabel, string> = {
   "SHIP IT": "#FFCCBC",
 };
 
+import { AMBIENT } from "@/lib/ambient-motion";
+
 /** Tween + reverse — safe (spring allows max 2 keyframes). */
 const IDLE_BOB = {
   animate: { y: -3 },
@@ -31,6 +33,13 @@ const IDLE_BOB = {
   },
 };
 
+function idleSwayRotation(base: number) {
+  return {
+    animate: { rotate: [base - 1.5, base + 1.5] },
+    transition: AMBIENT.sway.transition,
+  };
+}
+
 const DRAG_SPRING = { type: "spring" as const, stiffness: 400, damping: 28 };
 
 export function CanvasItemNode({ item }: { item: CanvasItem }) {
@@ -38,8 +47,11 @@ export function CanvasItemNode({ item }: { item: CanvasItem }) {
   const select = useDoodleStore((s) => s.select);
   const moveItem = useDoodleStore((s) => s.moveItem);
   const bumpVisualPulse = useDoodleStore((s) => s.bumpVisualPulse);
+  const buddyReact = useDoodleStore((s) => s.buddyReact);
   const zoom = useDoodleStore((s) => s.zoom);
-  const pulse = useDoodleStore((s) => s.visualPulse[item.id] ?? 0);
+  const pulseEntry = useDoodleStore((s) => s.visualPulse[item.id]);
+  const pulse = pulseEntry?.seq ?? 0;
+  const pulseAction = pulseEntry?.action ?? "default";
 
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, itemX: 0, itemY: 0 });
@@ -47,7 +59,7 @@ export function CanvasItemNode({ item }: { item: CanvasItem }) {
   const dragSoundPlayed = useRef(false);
 
   const selected = selectedId === item.id;
-  const burst = burstForItem(item);
+  const burst = burstForItem(item, pulse > 0 ? pulseAction : "default");
 
   const onPointerDown = (e: React.PointerEvent) => {
     e.stopPropagation();
@@ -72,7 +84,7 @@ export function CanvasItemNode({ item }: { item: CanvasItem }) {
       didDrag.current = true;
       if (!dragSoundPlayed.current) {
         dragSoundPlayed.current = true;
-        playDoodleSound("dragStart");
+        playDragStart();
       }
     }
     moveItem(item.id, dragStart.current.itemX + dx, dragStart.current.itemY + dy);
@@ -80,8 +92,9 @@ export function CanvasItemNode({ item }: { item: CanvasItem }) {
 
   const onPointerUp = () => {
     if (dragging && didDrag.current) {
-      playDoodleSound("drop");
-      bumpVisualPulse([item.id]);
+      playDrop();
+      bumpVisualPulse([item.id], "default");
+      buddyReact("dragDrop");
     }
     setDragging(false);
   };
@@ -139,6 +152,9 @@ export function CanvasItemNode({ item }: { item: CanvasItem }) {
         </motion.div>
       );
     }
+    const sway = idleSwayRotation(
+      item.kind === "sticker" ? item.rotation : item.kind === "note" ? item.rotation : 0,
+    );
     return (
       <motion.div
         key={item.id}
@@ -147,14 +163,16 @@ export function CanvasItemNode({ item }: { item: CanvasItem }) {
         transition={IDLE_BOB.transition}
       >
         {selectionRing}
-        <div
+        <motion.div
+          animate={sway.animate}
+          transition={sway.transition}
           className={cn(
             "transition-transform duration-200 ease-out",
             selected && "scale-[1.04]",
           )}
         >
           {children}
-        </div>
+        </motion.div>
       </motion.div>
     );
   };

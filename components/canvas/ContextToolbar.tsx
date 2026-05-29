@@ -1,8 +1,41 @@
 "use client";
 
 import { ANIM_STYLE_LABEL } from "@/lib/item-motion";
-import { playDoodleSound } from "@/lib/sounds/doodle-sounds";
+import { playHover } from "@/lib/sounds/doodle-sounds";
 import { useDoodleStore } from "@/store/doodle-store";
+
+const ICON = "text-[23px] leading-none shrink-0";
+const BTN =
+  "inline-flex items-center gap-2 rounded-full px-4 py-2 font-[family-name:var(--font-hand)] text-[18px] hover:bg-[#F7ED99]/50 active:scale-95";
+
+function ToolbarAction({
+  icon,
+  label,
+  onClick,
+  className,
+  title,
+}: {
+  icon: string;
+  label: string;
+  onClick: () => void;
+  className?: string;
+  title?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onMouseEnter={() => playHover()}
+      onClick={onClick}
+      className={className ? `${BTN} ${className}` : BTN}
+      title={title}
+    >
+      <span className={ICON} aria-hidden>
+        {icon}
+      </span>
+      {label}
+    </button>
+  );
+}
 
 export function ContextToolbar() {
   const selectedId = useDoodleStore((s) => s.selectedId);
@@ -31,42 +64,23 @@ export function ContextToolbar() {
         style={{ transform: "rotate(-0.5deg)" }}
       >
         {isObject ? (
-          <button
-            type="button"
-            onMouseEnter={() => playDoodleSound("hover")}
-            onClick={() => setEditPanelOpen(true)}
-            className="rounded-full px-4 py-2 font-[family-name:var(--font-hand)] text-[18px] hover:bg-[#F7ED99]/50 active:scale-95"
-          >
-            ✏️ Edit
-          </button>
+          <ToolbarAction icon="✏️" label="Edit" onClick={() => setEditPanelOpen(true)} />
         ) : null}
-        <button
-          type="button"
-          onMouseEnter={() => playDoodleSound("hover")}
+        <ToolbarAction
+          icon="⚡"
+          label="Animate"
           onClick={() => animateSelection()}
-          className="rounded-full px-4 py-2 font-[family-name:var(--font-hand)] text-[18px] hover:bg-[#F7ED99]/50 active:scale-95"
           title={styleHint ? `Current: ${styleHint}` : "Cycle animation style"}
-        >
-          ⚡ Animate
-        </button>
+        />
         {isObject ? (
-          <button
-            type="button"
-            onMouseEnter={() => playDoodleSound("hover")}
-            onClick={() => openPanel("replace")}
-            className="rounded-full px-4 py-2 font-[family-name:var(--font-hand)] text-[18px] hover:bg-[#F7ED99]/50 active:scale-95"
-          >
-            🎭 Replace
-          </button>
+          <ToolbarAction icon="🎭" label="Replace" onClick={() => openPanel("replace")} />
         ) : null}
-        <button
-          type="button"
-          onMouseEnter={() => playDoodleSound("hover")}
+        <ToolbarAction
+          icon="🗑"
+          label="Delete"
           onClick={() => deleteItem(selected.id)}
-          className="rounded-full px-4 py-2 font-[family-name:var(--font-hand)] text-[18px] hover:bg-[#FFAB91]/40 active:scale-95"
-        >
-          🗑 Delete
-        </button>
+          className="hover:bg-[#FFAB91]/40"
+        />
       </div>
     </div>
   );

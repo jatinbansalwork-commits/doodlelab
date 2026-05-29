@@ -17,9 +17,10 @@ export function ConceptPicker() {
         <button
           type="button"
           onClick={backToPrompt}
-          className="font-[family-name:var(--font-hand)] text-[16px] text-[#111] hover:underline"
+          aria-label="Back"
+          className="font-[family-name:var(--font-hand)] text-[22px] leading-none text-[#111] hover:opacity-70"
         >
-          ← new idea
+          ←
         </button>
 
         <header className="mt-5 max-w-3xl">

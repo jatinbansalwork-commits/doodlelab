@@ -4,11 +4,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Copy, X } from "lucide-react";
 import { useCallback } from "react";
 import { cn } from "@/lib/cn";
+import { playSuccess } from "@/lib/sounds/doodle-sounds";
 import { useDoodleStore } from "@/store/doodle-store";
 import type { ExportFormat } from "@/types/doodle-app";
 
+/** Only formats that export real, usable output (GIF is not implemented). */
 const FORMATS: { id: ExportFormat; label: string }[] = [
-  { id: "gif", label: "GIF" },
   { id: "svg", label: "SVG" },
   { id: "react", label: "React Component" },
   { id: "framer", label: "Framer Motion" },
@@ -17,21 +18,30 @@ const FORMATS: { id: ExportFormat; label: string }[] = [
 export function ExportModal() {
   const open = useDoodleStore((s) => s.exportOpen);
   const setExportOpen = useDoodleStore((s) => s.setExportOpen);
-  const format = useDoodleStore((s) => s.exportFormat);
+  const storedFormat = useDoodleStore((s) => s.exportFormat);
   const setExportFormat = useDoodleStore((s) => s.setExportFormat);
+  const format = FORMATS.some((f) => f.id === storedFormat) ? storedFormat : "react";
   const items = useDoodleStore((s) => s.items);
   const selectedConcept = useDoodleStore((s) => s.selectedConcept);
-  const showCopyToast = useDoodleStore((s) => s.showCopyToast);
+  const triggerStageMoment = useDoodleStore((s) => s.triggerStageMoment);
+  const bumpVisualPulse = useDoodleStore((s) => s.bumpVisualPulse);
+  const buddyReact = useDoodleStore((s) => s.buddyReact);
 
   const code = useDoodleStore((s) => s.getExportContent());
 
   const copy = useCallback(async () => {
     await navigator.clipboard.writeText(code);
-    showCopyToast();
-  }, [code, showCopyToast]);
+    playSuccess();
+    triggerStageMoment("export");
+    bumpVisualPulse(
+      items.map((i) => i.id),
+      "export",
+    );
+    buddyReact("export");
+  }, [code, items, triggerStageMoment, bumpVisualPulse, buddyReact]);
 
   const download = useCallback(() => {
-    const ext = format === "svg" || format === "gif" ? "svg" : "tsx";
+    const ext = format === "svg" ? "svg" : "tsx";
     const blob = new Blob([code], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -39,7 +49,14 @@ export function ExportModal() {
     a.download = `motionlab-scene.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [code, format]);
+    playSuccess();
+    triggerStageMoment("export");
+    bumpVisualPulse(
+      items.map((i) => i.id),
+      "export",
+    );
+    buddyReact("export");
+  }, [code, format, items, triggerStageMoment, bumpVisualPulse, buddyReact]);
 
   return (
     <AnimatePresence>

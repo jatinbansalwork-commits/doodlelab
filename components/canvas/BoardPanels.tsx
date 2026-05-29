@@ -6,7 +6,7 @@ import { STICKER_LABELS } from "@/lib/board-actions";
 import type { CanvasObjectType, StickerLabel } from "@/types/canvas";
 import { useDoodleStore } from "@/store/doodle-store";
 import { pickRandom, CHARACTER_TYPES } from "@/lib/board-actions";
-import { playDoodleSound } from "@/lib/sounds/doodle-sounds";
+import { playAddCharacter, playHover } from "@/lib/sounds/doodle-sounds";
 
 export function BoardPanels() {
   const activePanel = useDoodleStore((s) => s.activePanel);
@@ -59,7 +59,7 @@ export function BoardPanels() {
                     <button
                       key={`${group.group}-${t.label}`}
                       type="button"
-                      onMouseEnter={() => playDoodleSound("hover")}
+                      onMouseEnter={() => playHover()}
                       onClick={() => addCharacterOfType(t.type)}
                       className="rounded-lg border-2 border-[#111] bg-[#F7ED99]/80 px-3 py-1.5 font-[family-name:var(--font-hand)] text-[16px] hover:scale-[1.03] active:scale-95"
                     >
@@ -72,12 +72,15 @@ export function BoardPanels() {
             <button
               type="button"
               onClick={() => {
-                playDoodleSound("surprise");
+                playAddCharacter();
                 addCharacterOfType(pickRandom(CHARACTER_TYPES));
               }}
-              className="mt-1 w-full rounded-xl border-2 border-dashed border-[#111]/40 py-2 font-[family-name:var(--font-hand)] text-[17px] hover:bg-[#F3F1EA]"
+              className="mt-1 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#111]/40 py-2 font-[family-name:var(--font-hand)] text-[17px] hover:bg-[#F3F1EA]"
             >
-              🎲 Surprise Character
+              <span className="text-[22px] leading-none" aria-hidden>
+                🎲
+              </span>
+              Surprise Character
             </button>
           </div>
         ) : null}

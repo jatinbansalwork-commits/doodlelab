@@ -6,7 +6,7 @@ export function generateCssCode(config: MotionConfig): string {
   const name = `motionlab-${config.type}`;
   const easing = mapEasing(config.easing);
 
-  return `/* ${label} — DoodleLab AI */
+  return `/* ${label} — DoodleLab */
 
 ${keyframes(config, name)}
 

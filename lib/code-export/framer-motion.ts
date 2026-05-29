@@ -8,7 +8,7 @@ export function generateFramerMotionCode(config: MotionConfig): string {
 
 import { motion } from "framer-motion";
 
-/** ${label} — DoodleLab AI */
+/** ${label} — DoodleLab */
 export const motionLabVariants = {
   hidden: { opacity: 0, y: ${config.type === "slideUp" ? config.distance : config.type === "slideDown" ? -config.distance : 0} },
   visible: {

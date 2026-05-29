@@ -1,6 +1,6 @@
 "use client";
 
-import { playDoodleSound } from "@/lib/sounds/doodle-sounds";
+import { playHover } from "@/lib/sounds/doodle-sounds";
 import { useDoodleStore } from "@/store/doodle-store";
 
 export function BoardTopBar({
@@ -47,24 +47,29 @@ export function BoardTopBar({
             <button
               type="button"
               onClick={toggleSoundMuted}
-              className="rounded-full border-2 border-[#111] bg-white px-3 py-2 font-[family-name:var(--font-hand)] text-[16px] shadow-[2px_2px_0_#111] hover:bg-[#F3F1EA] active:scale-95"
+              className="rounded-full border-2 border-[#111] bg-white px-3 py-2 font-[family-name:var(--font-hand)] shadow-[2px_2px_0_#111] hover:bg-[#F3F1EA] active:scale-95"
               aria-pressed={soundMuted}
               title={soundMuted ? "Unmute sounds" : "Mute sounds"}
             >
-              {soundMuted ? "🔇" : "🔊"}
+              <span className="text-[21px] leading-none" aria-hidden>
+                {soundMuted ? "🔇" : "🔊"}
+              </span>
             </button>
             <button
               type="button"
               onClick={remixBoard}
-              onMouseEnter={() => playDoodleSound("hover")}
-              className="hidden rounded-full border-2 border-[#111] bg-accent px-4 py-2 font-[family-name:var(--font-hand)] text-[17px] font-semibold text-white shadow-[3px_3px_0_#111] transition-transform hover:scale-[1.02] active:scale-[0.98] sm:inline-flex sm:px-5 sm:text-[18px]"
+              onMouseEnter={() => playHover()}
+              className="hidden items-center gap-2 rounded-full border-2 border-[#111] bg-accent px-4 py-2 font-[family-name:var(--font-hand)] text-[17px] font-semibold text-white shadow-[3px_3px_0_#111] transition-transform hover:scale-[1.02] active:scale-[0.98] sm:inline-flex sm:px-5 sm:text-[18px]"
             >
-              ✨ Remix
+              <span className="text-[22px] leading-none" aria-hidden>
+                ✨
+              </span>
+              Remix
             </button>
             <button
               type="button"
               onClick={() => setExportOpen(true)}
-              onMouseEnter={() => playDoodleSound("hover")}
+              onMouseEnter={() => playHover()}
               className="rounded-full border-2 border-[#111] bg-white px-4 py-2 font-[family-name:var(--font-hand)] text-[17px] shadow-[2px_3px_0_#111] hover:bg-[#FAFAF7] active:scale-[0.98] sm:px-5 sm:text-[18px]"
             >
               Export

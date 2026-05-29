@@ -1,6 +1,6 @@
 "use client";
 
-import { playDoodleSound } from "@/lib/sounds/doodle-sounds";
+import { playHover } from "@/lib/sounds/doodle-sounds";
 import { useDoodleStore } from "@/store/doodle-store";
 
 const DOCK_ACTIONS = [
@@ -45,13 +45,16 @@ export function ActionDock() {
           <button
             key={action.id}
             type="button"
-            onMouseEnter={() => playDoodleSound("hover")}
+            onMouseEnter={() => playHover()}
             onClick={() => run(action.id)}
             className={`flex min-w-[200px] items-center gap-3 rounded-xl px-3 py-2.5 text-left font-[family-name:var(--font-hand)] text-[18px] text-[#111] transition-colors hover:bg-[#F3F1EA] active:scale-[0.98] ${
               action.id === "remix" ? "bg-[#F7ED99]/60 font-semibold" : ""
             }`}
           >
-            <span className="text-[20px]" aria-hidden>
+            <span
+              className="inline-flex w-7 shrink-0 justify-center text-[26px] leading-none"
+              aria-hidden
+            >
               {action.icon}
             </span>
             {action.label}

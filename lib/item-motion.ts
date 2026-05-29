@@ -1,3 +1,4 @@
+import { burstForAction, type MicroAction } from "@/lib/micro-interactions";
 import type { CanvasItem, PlayAnimStyle } from "@/types/canvas";
 import type { MotionConfig } from "@/types/motion";
 
@@ -67,34 +68,8 @@ export function liveObjectMotion(
   return liveMotionForStyle(playStyle, config);
 }
 
-export function burstForItem(item: CanvasItem) {
-  if (item.kind === "object") {
-    return {
-      animate: {
-        scale: [1, 1.25, 0.92, 1.1, 1],
-        rotate: [0, -8, 8, -4, 0],
-        y: [0, -18, 6, -8, 0],
-      },
-      transition: { duration: 0.55, ease: [0.34, 1.4, 0.64, 1] as const },
-    };
-  }
-  if (item.kind === "sticker") {
-    return {
-      animate: {
-        scale: [1, 1.35, 0.95, 1.05, 1],
-        rotate: [item.rotation, item.rotation + 14, item.rotation - 10, item.rotation],
-      },
-      transition: { duration: 0.45, ease: "easeOut" as const },
-    };
-  }
-  return {
-    animate: {
-      scale: [1, 1.15, 1],
-      rotate: [item.rotation, item.rotation + 6, item.rotation - 5, item.rotation],
-      y: [0, -12, 0],
-    },
-    transition: { duration: 0.5 },
-  };
+export function burstForItem(item: CanvasItem, action: MicroAction = "default") {
+  return burstForAction(action, item);
 }
 
 export const ANIM_STYLE_CYCLE: PlayAnimStyle[] = [

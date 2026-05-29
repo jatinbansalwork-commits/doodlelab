@@ -14,7 +14,7 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: "DoodleLab AI",
+  title: "DoodleLab",
   description: "Turn ideas into playful animated doodles.",
 };
 

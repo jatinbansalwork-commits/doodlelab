@@ -4,7 +4,6 @@ import { ConceptPicker } from "@/components/concepts/ConceptPicker";
 import { CanvasView } from "@/components/canvas/CanvasView";
 import { ExportModal } from "@/components/export/ExportModal";
 import { PromptScreen } from "@/components/prompt/PromptScreen";
-import { Toast } from "@/components/ui/Toast";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useDoodleStore } from "@/store/doodle-store";
 
@@ -18,7 +17,6 @@ export function MotionLab() {
       {phase === "concepts" && <ConceptPicker />}
       {phase === "canvas" && <CanvasView />}
       <ExportModal />
-      <Toast />
     </div>
   );
 }

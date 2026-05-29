@@ -1,8 +1,24 @@
 import { create } from "zustand";
-import { pickRandom, CHARACTER_TYPES } from "@/lib/board-actions";
+import { pickRandom, CHARACTER_TYPES, STICKER_LABELS } from "@/lib/board-actions";
 import { ANIM_STYLE_CYCLE, ANIM_STYLE_LABEL } from "@/lib/item-motion";
-import { SURPRISE_MESSAGES } from "@/lib/replace-options";
-import { playDoodleSound, setSoundMuted, isSoundMuted } from "@/lib/sounds/doodle-sounds";
+import {
+  isSoundMuted,
+  playAddCharacter,
+  playAddSticker,
+  playClick,
+  playExport,
+  playRemix,
+  playSelect,
+  playSuccess,
+  playHover,
+  setSoundMuted,
+} from "@/lib/sounds/doodle-sounds";
+import {
+  DELETE_ANIM_MS,
+  REMIX_STAGGER_MS,
+  type MicroAction,
+  type StageMicroAction,
+} from "@/lib/micro-interactions";
 import type { PlayAnimStyle } from "@/types/canvas";
 import { buildSceneFromBlueprint, buildSceneFromConcept } from "@/lib/build-scene";
 import { generateConcepts } from "@/lib/generate-concepts";
@@ -21,10 +37,14 @@ import type {
   CanvasObject,
   StickerLabel,
 } from "@/types/canvas";
+import type { BuddyMood, BuddyTrigger } from "@/lib/doodle-buddy/messages";
+import { buildBuddyCue } from "@/lib/doodle-buddy/react";
 import type { AppPhase, DoodleConcept, ExportFormat } from "@/types/doodle-app";
 
 let idCounter = 0;
 const nextId = () => `c-${++idCounter}-${Date.now()}`;
+let buddyDismissTimer: number | undefined;
+let lastDragBuddyAt = 0;
 
 interface DoodleState {
   phase: AppPhase;
@@ -49,7 +69,9 @@ interface DoodleState {
   isGeneratingBoard: boolean;
   boardReady: boolean;
   activePanel: null | "character" | "sticker" | "replace";
-  visualPulse: Record<string, number>;
+  visualPulse: Record<string, { seq: number; action: MicroAction }>;
+  stageMoment: { seq: number; action: StageMicroAction } | null;
+  buddyCue: { text: string; mood: BuddyMood; seq: number } | null;
   soundMuted: boolean;
 
   setPrompt: (p: string) => void;
@@ -75,7 +97,9 @@ interface DoodleState {
   setBoardFeedback: (message: string | null) => void;
   openPanel: (panel: "character" | "sticker" | "replace") => void;
   closePanel: () => void;
-  bumpVisualPulse: (ids: string[]) => void;
+  bumpVisualPulse: (ids: string[], action?: MicroAction) => void;
+  triggerStageMoment: (action: StageMicroAction) => void;
+  buddyReact: (trigger: BuddyTrigger) => void;
   remixBoard: () => void;
   addCharacterOfType: (type: import("@/types/canvas").CanvasObjectType) => void;
   addStickerToBoard: (label?: StickerLabel, customText?: string) => void;
@@ -115,6 +139,8 @@ export const useDoodleStore = create<DoodleState>((set, get) => ({
   boardReady: false,
   activePanel: null,
   visualPulse: {},
+  stageMoment: null,
+  buddyCue: null,
   soundMuted: typeof window !== "undefined" ? isSoundMuted() : false,
 
   setPrompt: (prompt) => set({ prompt }),
@@ -128,7 +154,7 @@ export const useDoodleStore = create<DoodleState>((set, get) => ({
     const next = !get().soundMuted;
     setSoundMuted(next);
     set({ soundMuted: next });
-    if (!next) playDoodleSound("hover");
+    if (!next) playHover();
   },
 
   doodleIt: async () => {
@@ -190,7 +216,24 @@ export const useDoodleStore = create<DoodleState>((set, get) => ({
       boardReady: true,
       boardFeedback: null,
     });
-    playDoodleSound("sceneReady");
+    playSuccess();
+    get().buddyReact("boardReady");
+  },
+
+  buddyReact: (trigger) => {
+    if (!get().boardReady || get().isGeneratingBoard) return;
+    if (trigger === "dragDrop") {
+      const now = Date.now();
+      if (now - lastDragBuddyAt < 6000) return;
+      lastDragBuddyAt = now;
+    }
+    const cue = buildBuddyCue(trigger);
+    set({ buddyCue: cue });
+    if (typeof window === "undefined") return;
+    if (buddyDismissTimer) clearTimeout(buddyDismissTimer);
+    buddyDismissTimer = window.setTimeout(() => {
+      set((s) => (s.buddyCue?.seq === cue.seq ? { buddyCue: null } : {}));
+    }, 2600);
   },
 
   fitSceneToView: () => {
@@ -207,26 +250,39 @@ export const useDoodleStore = create<DoodleState>((set, get) => ({
   openPanel: (activePanel) => set({ activePanel }),
   closePanel: () => set({ activePanel: null }),
 
-  bumpVisualPulse: (ids) =>
+  bumpVisualPulse: (ids, action = "default") =>
     set((s) => {
       const next = { ...s.visualPulse };
-      const tick = Date.now();
-      for (const id of ids) next[id] = tick;
+      const seq = Date.now();
+      for (const id of ids) next[id] = { seq, action };
       return { visualPulse: next };
     }),
+
+  triggerStageMoment: (action) => {
+    if (typeof window === "undefined") return;
+    const seq = Date.now();
+    set({ stageMoment: { action, seq } });
+    window.setTimeout(() => {
+      set((s) => (s.stageMoment?.seq === seq ? { stageMoment: null } : {}));
+    }, 580);
+  },
 
   remixBoard: () => {
     const concept = get().selectedConcept;
     if (!concept || !get().boardReady) return;
+    playRemix();
+    get().triggerStageMoment("remix");
     const blueprint = remixSceneBlueprint(concept, get().prompt);
     const { items, arrows } = buildSceneFromBlueprint(blueprint, concept);
     const ids = items.map((i) => i.id);
-    set({ items, arrows, selectedId: null, editPanelOpen: false, activePanel: null });
+    set({ items, arrows, selectedId: null, editPanelOpen: false, activePanel: null, boardFeedback: null });
     get().fitSceneToView();
-    get().bumpVisualPulse(ids);
-    playDoodleSound("remix");
-    set({ boardFeedback: "Whoa — new version!" });
-    setTimeout(() => set({ boardFeedback: null }), 2400);
+    get().buddyReact("remix");
+    if (typeof window !== "undefined") {
+      ids.forEach((id, i) => {
+        window.setTimeout(() => get().bumpVisualPulse([id], "remix"), i * REMIX_STAGGER_MS);
+      });
+    }
   },
 
   addCharacterOfType: (type) => {
@@ -261,8 +317,9 @@ export const useDoodleStore = create<DoodleState>((set, get) => ({
       selectedId: newObj.id,
       activePanel: null,
     });
-    get().bumpVisualPulse([newObj.id]);
-    playDoodleSound("character");
+    playAddCharacter();
+    get().bumpVisualPulse([newObj.id], "addCharacter");
+    get().buddyReact("addCharacter");
   },
 
   addStickerToBoard: (label, customText) => {
@@ -281,8 +338,9 @@ export const useDoodleStore = create<DoodleState>((set, get) => ({
     );
     const added = get().items[get().items.length - 1];
     if (added) {
-      get().bumpVisualPulse([added.id]);
-      playDoodleSound("sticker");
+      playAddSticker();
+      get().bumpVisualPulse([added.id], "addSticker");
+      get().buddyReact("addSticker");
     }
     set({ selectedId: added?.id ?? null, activePanel: null });
   },
@@ -325,37 +383,59 @@ export const useDoodleStore = create<DoodleState>((set, get) => ({
           }),
         };
       }),
-      boardFeedback: objectTargets.length
-        ? `${ANIM_STYLE_LABEL[feedbackStyle]} mode!`
-        : "✨ More wiggle!",
+      boardFeedback: null,
     }));
-    get().bumpVisualPulse(targets.map((t) => t.id));
-    if (stickerOrNote.length && !objectTargets.length) {
-      set({ boardFeedback: "✨ Wiggle!" });
-    }
-    playDoodleSound("animate");
-    setTimeout(() => set({ boardFeedback: null }), 1800);
+    get().bumpVisualPulse(targets.map((t) => t.id), "default");
+    playClick();
+    get().buddyReact("animate");
   },
 
   surpriseBoard: () => {
     const concept = get().selectedConcept;
     if (!concept || !get().boardReady || typeof window === "undefined") return;
-    playDoodleSound("surprise");
-    const msg = pickRandom(SURPRISE_MESSAGES);
+    playSuccess();
+
     const roll = Math.random();
-    if (roll < 0.3) {
+    const objects = get().items.filter((i): i is CanvasObject => i.kind === "object");
+
+    const surpriseAnimateRandom = () => {
+      if (!objects.length) {
+        get().animateSelection();
+        get().buddyReact("surprise");
+        return;
+      }
+      const target = pickRandom(objects);
+      const playStyle = pickRandom(ANIM_STYLE_CYCLE);
+      get().updateObject(target.id, {
+        playStyle,
+        speed: Math.min(100, target.speed + 20),
+        intensity: Math.min(100, target.intensity + 18),
+      });
+      set({ selectedId: target.id });
+      get().bumpVisualPulse([target.id], "default");
+      playClick();
+      get().buddyReact("animate");
+    };
+
+    if (roll < 0.22) {
       get().addCharacterOfType(pickRandom(CHARACTER_TYPES));
-      set({ boardFeedback: msg });
-      setTimeout(() => set({ boardFeedback: null }), 2200);
+      get().buddyReact("surprise");
+      return;
+    }
+    if (roll < 0.42) {
+      get().addStickerToBoard(pickRandom(STICKER_LABELS));
       return;
     }
     if (roll < 0.55) {
-      get().addStickerToBoard();
-      set({ boardFeedback: msg });
-      setTimeout(() => set({ boardFeedback: null }), 2200);
+      surpriseAnimateRandom();
       return;
     }
-    if (roll < 0.75) {
+    if (roll < 0.68) {
+      get().addStickerToBoard(pickRandom(STICKER_LABELS));
+      surpriseAnimateRandom();
+      return;
+    }
+    if (roll < 0.82) {
       const { items, panX, panY, zoom } = get();
       const center = viewportCenterToCanvas(
         panX,
@@ -367,7 +447,7 @@ export const useDoodleStore = create<DoodleState>((set, get) => ({
       const note = {
         id: nextId(),
         kind: "note" as const,
-        text: pickRandom(["surprise!", "yay!", "woohoo!", "nice!"]),
+        text: pickRandom(["surprise!", "yay!", "nice!"]),
         x: center.x + (Math.random() - 0.5) * 60,
         y: center.y + (Math.random() - 0.5) * 40,
         rotation: (Math.random() - 0.5) * 12,
@@ -378,15 +458,14 @@ export const useDoodleStore = create<DoodleState>((set, get) => ({
       set({
         items: [...items, note],
         selectedId: note.id,
-        boardFeedback: msg,
+        boardFeedback: null,
       });
-      get().bumpVisualPulse([note.id]);
-      setTimeout(() => set({ boardFeedback: null }), 2200);
+      get().bumpVisualPulse([note.id], "addSticker");
+      get().buddyReact("surprise");
       return;
     }
     get().animateSelection();
-    set({ boardFeedback: msg });
-    setTimeout(() => set({ boardFeedback: null }), 2200);
+    get().buddyReact("surprise");
   },
 
   replaceObjectWith: (id, type) => {
@@ -405,7 +484,7 @@ export const useDoodleStore = create<DoodleState>((set, get) => ({
       selectedId: id,
     }));
     get().bumpVisualPulse([id]);
-    playDoodleSound("create");
+    playClick();
   },
 
   backToPrompt: () =>
@@ -423,13 +502,15 @@ export const useDoodleStore = create<DoodleState>((set, get) => ({
       boardReady: false,
       activePanel: null,
       visualPulse: {},
+      stageMoment: null,
+      buddyCue: null,
       prompt: "",
     }),
 
   setPan: (panX, panY) => set({ panX, panY }),
   setZoom: (zoom) => set({ zoom: Math.min(2, Math.max(0.45, zoom)) }),
   select: (selectedId) => {
-    if (selectedId) playDoodleSound("select");
+    if (selectedId) playSelect();
     set({ selectedId, editPanelOpen: false });
   },
 
@@ -481,15 +562,24 @@ export const useDoodleStore = create<DoodleState>((set, get) => ({
     }),
 
   deleteItem: (id) => {
-    playDoodleSound("delete");
-    set((s) => ({
-      items: s.items.filter((i) => i.id !== id),
-      arrows: s.arrows.filter((a) => a.fromId !== id && a.toId !== id),
-      selectedId: s.selectedId === id ? null : s.selectedId,
-      editPanelOpen: s.selectedId === id ? false : s.editPanelOpen,
-      activePanel:
-        s.activePanel === "replace" && s.selectedId === id ? null : s.activePanel,
-    }));
+    if (!get().items.some((i) => i.id === id)) return;
+    playClick();
+    get().bumpVisualPulse([id], "delete");
+    get().buddyReact("delete");
+    if (typeof window === "undefined") return;
+    window.setTimeout(() => {
+      set((s) => ({
+        items: s.items.filter((i) => i.id !== id),
+        arrows: s.arrows.filter((a) => a.fromId !== id && a.toId !== id),
+        selectedId: s.selectedId === id ? null : s.selectedId,
+        editPanelOpen: s.selectedId === id ? false : s.editPanelOpen,
+        activePanel:
+          s.activePanel === "replace" && s.selectedId === id ? null : s.activePanel,
+        visualPulse: Object.fromEntries(
+          Object.entries(s.visualPulse).filter(([key]) => key !== id),
+        ),
+      }));
+    }, DELETE_ANIM_MS);
   },
 
   duplicateItem: (id) => {
@@ -503,7 +593,13 @@ export const useDoodleStore = create<DoodleState>((set, get) => ({
   },
 
   setExportOpen: (exportOpen) => {
-    if (exportOpen) playDoodleSound("export");
+    if (exportOpen) {
+      playExport();
+      get().triggerStageMoment("export");
+      const ids = get().items.map((i) => i.id);
+      get().bumpVisualPulse(ids, "export");
+      get().buddyReact("export");
+    }
     set({ exportOpen });
   },
   setExportFormat: (exportFormat) => set({ exportFormat }),
@@ -517,8 +613,6 @@ export const useDoodleStore = create<DoodleState>((set, get) => ({
     switch (exportFormat) {
       case "svg":
         return exportSceneSvg(items);
-      case "gif":
-        return `<!-- Animated scene: open in browser or convert with ezgif.com -->\n${exportSceneSvg(items)}`;
       case "framer":
         return generateExportCode("framer", config);
       case "react":

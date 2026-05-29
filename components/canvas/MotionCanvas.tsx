@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { CanvasItemNode } from "./CanvasItemNode";
+import { CanvasBoardHint } from "./CanvasBoardHint";
+import { DoodleBuddy } from "./DoodleBuddy";
+import { StageMicroFx } from "./StageMicroFx";
 import { StickyNoteEditor } from "./StickyNoteEditor";
 import { STAGE } from "@/lib/scene-bounds";
 import { useDoodleStore } from "@/store/doodle-store";
@@ -18,6 +21,7 @@ export function MotionCanvas() {
   const fitSceneToView = useDoodleStore((s) => s.fitSceneToView);
   const boardReady = useDoodleStore((s) => s.boardReady);
   const isGeneratingBoard = useDoodleStore((s) => s.isGeneratingBoard);
+  const stageMoment = useDoodleStore((s) => s.stageMoment);
 
   const [panning, setPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0, panX: 0, panY: 0 });
@@ -61,21 +65,6 @@ export function MotionCanvas() {
 
   const showStage = boardReady && !isGeneratingBoard && items.length > 0;
 
-  const characterCount = items.filter((i) => i.kind === "object").length;
-  const stickerCount = items.filter((i) => i.kind === "sticker").length;
-
-  useEffect(() => {
-    if (!boardReady) return;
-    const scene = { items, panX, panY, zoom, boardReady, isGeneratingBoard };
-    console.log("[MotionCanvas] canvas mounted");
-    console.log("[MotionCanvas] scene data loaded", scene);
-    console.log("[MotionCanvas] scene", scene);
-    console.log("[MotionCanvas] doodles count", items.length);
-    console.log("[MotionCanvas] character count", characterCount);
-    console.log("[MotionCanvas] sticker count", stickerCount);
-    console.log("[MotionCanvas] showStage", showStage);
-  }, [boardReady, items, panX, panY, zoom, isGeneratingBoard, characterCount, stickerCount, showStage]);
-
   return (
     <div
       className="absolute inset-0 touch-none"
@@ -99,15 +88,35 @@ export function MotionCanvas() {
       >
         {showStage ? (
           <motion.div
-            key={cameraKey}
+            key={`${cameraKey}-${stageMoment?.seq ?? 0}`}
             initial={{ scale: zoom * 0.72, opacity: 0 }}
-            animate={{ scale: zoom, opacity: 1, x: panX, y: panY }}
-            transition={{
-              scale: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
-              opacity: { duration: 0.35 },
-              x: { duration: 0 },
-              y: { duration: 0 },
-            }}
+            animate={
+              stageMoment?.action === "remix"
+                ? {
+                    scale: zoom,
+                    opacity: 1,
+                    x: panX,
+                    y: panY,
+                    rotate: [0, -0.6, 0.5, 0],
+                  }
+                : { scale: zoom, opacity: 1, x: panX, y: panY, rotate: 0 }
+            }
+            transition={
+              stageMoment?.action === "remix"
+                ? {
+                    rotate: { duration: 0.5, ease: "easeOut" },
+                    scale: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+                    opacity: { duration: 0.35 },
+                    x: { duration: 0 },
+                    y: { duration: 0 },
+                  }
+                : {
+                    scale: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+                    opacity: { duration: 0.35 },
+                    x: { duration: 0 },
+                    y: { duration: 0 },
+                  }
+            }
             className="relative shrink-0 overflow-visible rounded-[32px] border-2 border-[#111]/12 bg-[#FAFAF7] shadow-[8px_10px_0_rgba(17,17,17,0.1)]"
             style={{
               width: STAGE.width,
@@ -117,6 +126,9 @@ export function MotionCanvas() {
             {items.map((item) => (
               <CanvasItemNode key={item.id} item={item} />
             ))}
+            <CanvasBoardHint />
+            <StageMicroFx />
+            <DoodleBuddy />
             <StickyNoteEditor />
           </motion.div>
         ) : null}

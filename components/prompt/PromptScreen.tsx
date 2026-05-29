@@ -25,7 +25,7 @@ export function PromptScreen() {
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       >
         <h1 className="font-[family-name:var(--font-hand)] text-[72px] leading-[0.95] text-[#111] sm:text-[88px]">
-          DoodleLab AI
+          DoodleLab
         </h1>
 
         <p className="mt-4 font-[family-name:var(--font-hand)] text-[22px] leading-snug text-[#111]/80 sm:text-[24px]">

@@ -1,10 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { AMBIENT } from "@/lib/ambient-motion";
 import type { MotionConfig } from "@/types/motion";
 
 export function StarDoodle({ config }: { config: MotionConfig }) {
   const dur = config.duration;
+  const twinkle = AMBIENT.twinkle(dur, config.delay);
   return (
     <motion.svg viewBox="0 0 100 100" className="h-28 w-28">
       <motion.path
@@ -12,8 +14,8 @@ export function StarDoodle({ config }: { config: MotionConfig }) {
         fill="#FFF59D"
         stroke="#111"
         strokeWidth="2"
-        animate={{ scale: [1, 1.08, 1], rotate: [0, 6, -6, 0] }}
-        transition={{ duration: dur * 1.2, repeat: Infinity, delay: config.delay }}
+        animate={twinkle.animate}
+        transition={twinkle.transition}
         style={{ originX: "50px", originY: "50px" }}
       />
     </motion.svg>

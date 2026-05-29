@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { ActionDock } from "./ActionDock";
 import { BoardPanels } from "./BoardPanels";
-import { BoardFeedback } from "./BoardFeedback";
 import { BoardGenerating } from "./BoardGenerating";
 import { BoardTopBar } from "./BoardTopBar";
 import { ContextToolbar } from "./ContextToolbar";
@@ -33,7 +32,6 @@ export function CanvasView() {
       <MotionCanvas />
       {showEditing ? (
         <>
-          <BoardFeedback />
           <ActionDock />
           <BoardPanels />
           <ContextToolbar />
