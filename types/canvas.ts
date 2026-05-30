@@ -1,4 +1,14 @@
+import type { CatEmotion } from "@/lib/cat-emotion";
 import type { MotionConfig } from "@/types/motion";
+
+export type FillerType =
+  | "star"
+  | "heart"
+  | "sparkle"
+  | "swirl"
+  | "dot"
+  | "arrow"
+  | "cloud";
 
 export type CanvasObjectType =
   | "cloud"
@@ -44,6 +54,17 @@ export interface CanvasObject {
   speed: number;
   intensity: number;
   playStyle?: PlayAnimStyle;
+  catEmotion?: CatEmotion;
+}
+
+export interface CanvasFiller {
+  id: string;
+  kind: "filler";
+  type: FillerType;
+  x: number;
+  y: number;
+  scale: number;
+  rotation: number;
 }
 
 export interface CanvasSticker {
@@ -66,7 +87,7 @@ export interface CanvasNote {
   rotation: number;
 }
 
-export type CanvasItem = CanvasObject | CanvasSticker | CanvasNote;
+export type CanvasItem = CanvasObject | CanvasSticker | CanvasNote | CanvasFiller;
 
 export interface CanvasArrow {
   id: string;

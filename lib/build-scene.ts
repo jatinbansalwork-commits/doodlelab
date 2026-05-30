@@ -17,6 +17,18 @@ export function buildSceneFromBlueprint(
 
   const items: CanvasItem[] = [];
 
+  (blueprint.fillers ?? []).forEach((f) => {
+    items.push({
+      id: nextId(),
+      kind: "filler",
+      type: f.type,
+      x: f.x,
+      y: f.y,
+      scale: f.scale ?? 1,
+      rotation: f.rotation ?? 0,
+    });
+  });
+
   blueprint.objects.forEach((obj) => {
     items.push({
       id: nextId(),
@@ -29,6 +41,7 @@ export function buildSceneFromBlueprint(
       speed: concept.speed,
       intensity: concept.intensity,
       playStyle: "float",
+      ...(obj.type === "cat" && obj.catEmotion ? { catEmotion: obj.catEmotion } : {}),
     });
   });
 

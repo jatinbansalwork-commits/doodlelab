@@ -5,7 +5,8 @@ export function computeConceptStats(
   board: SceneBlueprint,
   mood: ConceptMood,
 ) {
-  const doodles = board.objects.length + board.notes.length;
+  const doodles =
+    board.objects.length + board.notes.length + (board.fillers?.length ?? 0);
   const stickers = board.stickers.length;
 
   const animations =

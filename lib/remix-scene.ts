@@ -1,4 +1,5 @@
 import { pickRandom, STICKER_LABELS } from "@/lib/board-actions";
+import { injectSceneFillers } from "@/lib/filler-engine";
 import { composeBoardScene } from "@/lib/prepare-board-scene";
 import { STAGE } from "@/lib/scene-bounds";
 import type { CanvasObjectType } from "@/types/canvas";
@@ -81,5 +82,9 @@ export function remixSceneBlueprint(
     },
   ].slice(0, 4);
 
-  return { objects, stickers, notes, connectObjects: false };
+  const blueprint = { objects, stickers, notes, connectObjects: false, themePack: base.themePack };
+  return {
+    ...blueprint,
+    fillers: injectSceneFillers(blueprint, concept.mood),
+  };
 }

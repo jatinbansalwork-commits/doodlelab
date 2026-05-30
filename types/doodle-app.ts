@@ -1,4 +1,6 @@
-import type { CanvasObjectType, StickerLabel } from "@/types/canvas";
+import type { CatEmotion } from "@/lib/cat-emotion";
+import type { ThemePackId } from "@/lib/theme-packs";
+import type { CanvasObjectType, FillerType, StickerLabel } from "@/types/canvas";
 import type { MotionConfig } from "@/types/motion";
 
 export type AppPhase = "prompt" | "concepts" | "canvas";
@@ -10,6 +12,15 @@ export interface SceneObjectPlacement {
   x: number;
   y: number;
   scale?: number;
+  catEmotion?: CatEmotion;
+}
+
+export interface SceneFillerPlacement {
+  type: FillerType;
+  x: number;
+  y: number;
+  scale?: number;
+  rotation?: number;
 }
 
 export interface SceneStickerPlacement {
@@ -30,6 +41,8 @@ export interface SceneBlueprint {
   objects: SceneObjectPlacement[];
   stickers: SceneStickerPlacement[];
   notes: SceneNotePlacement[];
+  fillers?: SceneFillerPlacement[];
+  themePack?: ThemePackId;
   connectObjects?: boolean;
 }
 

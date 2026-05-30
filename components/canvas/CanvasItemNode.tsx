@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { CanvasDoodle } from "@/components/doodles/CanvasDoodle";
+import { FillerDoodle } from "@/components/doodles/FillerDoodle";
 import { burstForItem, liveObjectMotion, motionKeyForObject } from "@/lib/item-motion";
 import { objectConfig } from "@/lib/canvas-math";
 import { playDragStart, playDrop } from "@/lib/sounds/doodle-sounds";
@@ -60,6 +61,22 @@ export function CanvasItemNode({ item }: { item: CanvasItem }) {
 
   const selected = selectedId === item.id;
   const burst = burstForItem(item, pulse > 0 ? pulseAction : "default");
+
+  if (item.kind === "filler") {
+    return (
+      <div
+        className="pointer-events-none absolute select-none"
+        style={{
+          left: item.x,
+          top: item.y,
+          transform: `rotate(${item.rotation}deg) scale(${item.scale})`,
+          transformOrigin: "top left",
+        }}
+      >
+        <FillerDoodle type={item.type} />
+      </div>
+    );
+  }
 
   const onPointerDown = (e: React.PointerEvent) => {
     e.stopPropagation();
@@ -233,7 +250,12 @@ export function CanvasItemNode({ item }: { item: CanvasItem }) {
       >
         {objectRing}
         <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
-          <CanvasDoodle key={motionKeyForObject(item)} type={item.type} config={config} />
+          <CanvasDoodle
+            key={motionKeyForObject(item)}
+            type={item.type}
+            config={config}
+            catEmotion={item.catEmotion}
+          />
         </div>
       </motion.div>
     );
@@ -253,7 +275,12 @@ export function CanvasItemNode({ item }: { item: CanvasItem }) {
       >
         {objectRing}
         <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
-          <CanvasDoodle key={motionKeyForObject(item)} type={item.type} config={config} />
+          <CanvasDoodle
+            key={motionKeyForObject(item)}
+            type={item.type}
+            config={config}
+            catEmotion={item.catEmotion}
+          />
         </div>
       </motion.div>
     );
@@ -273,7 +300,7 @@ export function CanvasItemNode({ item }: { item: CanvasItem }) {
         )}
       >
         <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
-          <CanvasDoodle type={item.type} config={config} />
+          <CanvasDoodle type={item.type} config={config} catEmotion={item.catEmotion} />
         </div>
       </motion.div>
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import type { CatEmotion } from "@/lib/cat-emotion";
 import type { CanvasObjectType } from "@/types/canvas";
 import type { MotionConfig } from "@/types/motion";
 import { BallDoodle } from "./BallDoodle";
@@ -37,10 +38,15 @@ const MAP: Record<CanvasObjectType, React.ComponentType<{ config: MotionConfig }
 export function CanvasDoodle({
   type,
   config,
+  catEmotion,
 }: {
   type: CanvasObjectType;
   config: MotionConfig;
+  catEmotion?: CatEmotion;
 }) {
+  if (type === "cat") {
+    return <CatDoodle config={config} emotion={catEmotion ?? "happy"} />;
+  }
   const D = MAP[type];
   return <D config={config} />;
 }

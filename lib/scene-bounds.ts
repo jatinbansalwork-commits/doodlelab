@@ -12,6 +12,7 @@ const ITEM_SIZE: Record<CanvasItem["kind"], { w: number; h: number }> = {
   object: { w: 140, h: 120 },
   sticker: { w: 90, h: 44 },
   note: { w: 150, h: 64 },
+  filler: { w: 28, h: 28 },
 };
 
 export function getSceneBounds(items: CanvasItem[]) {
@@ -35,7 +36,8 @@ export function getSceneBounds(items: CanvasItem[]) {
 
   for (const item of items) {
     const base = ITEM_SIZE[item.kind];
-    const scale = item.kind === "object" ? item.scale ?? 1 : 1;
+    const scale =
+      item.kind === "object" || item.kind === "filler" ? item.scale ?? 1 : 1;
     const w = base.w * scale;
     const h = base.h * scale;
     minX = Math.min(minX, item.x);
